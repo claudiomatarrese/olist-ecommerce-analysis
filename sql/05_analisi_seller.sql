@@ -3,7 +3,7 @@
 -- FASE 05 – ANALISI SELLER (VENDITORI)
 -- FILE: 05_analisi_seller.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 
 
@@ -126,3 +126,4 @@ SELECT
     SUM(numero_ordini)   AS totale_ordini_seller,
     SUM(numero_prodotti_venduti) AS totale_prodotti_seller
 FROM olist_sellers_kpi_v;
+

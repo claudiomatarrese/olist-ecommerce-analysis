@@ -3,7 +3,7 @@
 -- FASE 06 – KPI MASTER DASHBOARD
 -- FILE: 06_kpi_master.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 -- DESCRIZIONE:
 --   Vista finale che aggrega TUTTI i KPI globali:
@@ -166,3 +166,4 @@ CROSS JOIN olist_products_kpi_global_v p
 CROSS JOIN olist_reviews_kpi_global_v rev
 CROSS JOIN olist_payments_kpi_global_v pay
 CROSS JOIN olist_sellers_kpi_global_v s;
+

@@ -3,7 +3,7 @@
 -- FASE 07 – QUALITY CHECKS COMPLETI
 -- FILE: 07_quality_checks.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 -- SCOPO:
 --   Controlli qualità su tutte le fasi: clienti, ordini, logistica, prodotti, pagamenti, recensioni e seller.
@@ -184,3 +184,4 @@ FROM orders
 WHERE order_status = 'delivered'
 ORDER BY random()
 LIMIT 15;
+

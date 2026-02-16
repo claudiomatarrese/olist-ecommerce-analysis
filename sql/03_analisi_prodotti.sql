@@ -3,7 +3,7 @@
 -- FASE 03 – ANALISI PRODOTTI E CATEGORIE
 -- FILE: 03_analisi_prodotti.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 
 
@@ -121,3 +121,4 @@ SELECT
     AVG(lead_time_medio) AS lead_time_medio_prodotto,
     AVG(ritardo_medio)   AS ritardo_medio_prodotto
 FROM olist_products_kpi_v;
+

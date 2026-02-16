@@ -3,7 +3,7 @@
 -- FASE 01 – ANALISI CLIENTI (RETENTION & FREQUENCY)
 -- FILE: 01_analisi_clienti.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 -- DESCRIZIONE:
 --   Costruzione delle viste clienti: base delivered, per-cliente, calcolo retention, frequenza ordini e KPI finali.

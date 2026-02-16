@@ -3,7 +3,7 @@
 -- FASE 04 – ANALISI RECENSIONI
 -- FILE: 04_analisi_recensioni.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 
 
@@ -158,3 +158,4 @@ SELECT
     AVG(pct_review_tempestiva)            AS pct_review_tempestiva,
     SUM(totale_recensioni)                AS totale_recensioni
 FROM olist_reviews_kpi_v;
+

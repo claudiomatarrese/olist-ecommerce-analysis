@@ -3,7 +3,7 @@
 -- FASE 02 – ANALISI ORDINI & LOGISTICA
 -- FILE: 02_analisi_ordini.sql
 -- AUTORE: Claudio Matarrese
--- STRUMENTI: PostgreSQL + Power BI + Python
+-- STRUMENTI: PostgreSQL + Power BI
 -- ============================================================
 
 
@@ -168,3 +168,4 @@ JOIN customers c ON o.customer_id = c.customer_id
 WHERE o.order_status = 'delivered'
 GROUP BY s.seller_state, c.customer_state
 ORDER BY s.seller_state, c.customer_state;
+

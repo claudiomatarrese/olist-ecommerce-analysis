@@ -89,5 +89,5 @@ A static PDF version of the dashboard is available in the `docs/` folder.
 
 ## Notes
 - The dataset is not included in the repository
-
 - Project designed for **professional portfolio**
+

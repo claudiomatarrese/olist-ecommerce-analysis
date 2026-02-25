@@ -1,13 +1,13 @@
 -- ============================================================
--- PROGETTO: OLIST E-COMMERCE ANALYSIS
+-- PROJECT: OLIST E-COMMERCE ANALYSIS
 -- FILE: 00_schema.sql
--- SCOPO: Creazione schema tabelle RAW e indici
--- AUTORE: Claudio Matarrese
+-- PURPOSE: Create RAW tables and indexes
+-- AUTHOR: Claudio Matarrese
 -- ============================================================
 
 
 -- ============================================================
--- 01) TABELLA CUSTOMERS
+-- 01) CUSTOMERS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -23,7 +23,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_unique_id
 
 
 -- ============================================================
--- 02) TABELLA ORDERS
+-- 02) ORDERS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_purchase_ts
 
 
 -- ============================================================
--- 03) TABELLA ORDER_ITEMS
+-- 03) ORDER_ITEMS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -58,7 +58,8 @@ CREATE TABLE IF NOT EXISTS order_items (
     seller_id VARCHAR,
     shipping_limit_date TIMESTAMP,
     price NUMERIC,
-    freight_value NUMERIC
+    freight_value NUMERIC,
+    PRIMARY KEY (order_id, order_item_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_items_product_id
@@ -67,9 +68,12 @@ CREATE INDEX IF NOT EXISTS idx_order_items_product_id
 CREATE INDEX IF NOT EXISTS idx_order_items_seller_id
     ON order_items(seller_id);
 
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id
+    ON order_items(order_id);
+
 
 -- ============================================================
--- 04) TABELLA ORDER_PAYMENTS
+-- 04) ORDER_PAYMENTS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_payments (
@@ -77,7 +81,8 @@ CREATE TABLE IF NOT EXISTS order_payments (
     payment_sequential INT,
     payment_type VARCHAR,
     payment_installments INT,
-    payment_value NUMERIC
+    payment_value NUMERIC,
+    PRIMARY KEY (order_id, payment_sequential)
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_payments_order_id
@@ -88,7 +93,7 @@ CREATE INDEX IF NOT EXISTS idx_order_payments_type
 
 
 -- ============================================================
--- 05) TABELLA ORDER_REVIEWS
+-- 05) ORDER_REVIEWS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_reviews (
@@ -109,11 +114,11 @@ CREATE INDEX IF NOT EXISTS idx_reviews_score
 
 
 -- ============================================================
--- 05bis) ORDER_REVIEWS_FULL (dataset arricchito, se presente)
+-- 05b) ORDER_REVIEWS_FULL (extended version of reviews table)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_reviews_full (
-    review_id VARCHAR,
+    review_id VARCHAR PRIMARY KEY,
     order_id VARCHAR,
     review_score INT,
     review_comment_title VARCHAR,
@@ -122,9 +127,12 @@ CREATE TABLE IF NOT EXISTS order_reviews_full (
     review_answer_timestamp TIMESTAMP
 );
 
+CREATE INDEX IF NOT EXISTS idx_reviews_full_order_id
+    ON order_reviews_full(order_id);
+
 
 -- ============================================================
--- 06) TABELLA PRODUCTS
+-- 06) PRODUCTS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS products (
@@ -144,7 +152,7 @@ CREATE INDEX IF NOT EXISTS idx_products_category
 
 
 -- ============================================================
--- 07) TABELLA SELLERS
+-- 07) SELLERS TABLE
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS sellers (
@@ -156,4 +164,3 @@ CREATE TABLE IF NOT EXISTS sellers (
 
 CREATE INDEX IF NOT EXISTS idx_sellers_state
     ON sellers(seller_state);
-

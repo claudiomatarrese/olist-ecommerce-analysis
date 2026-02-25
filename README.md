@@ -1,8 +1,10 @@
 # Olist - E-Commerce Analysis (SQL + Power BI)
 
-Data Analysis Project based on the public **Olist Brazilian E-Commerce** dataset, available on Kaggle: 
+Data Analysis Project based on the public **Olist Brazilian E-Commerce** dataset, available on Kaggle:
+
 https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
-**Olist** database has around **100,000 real orders** done from various marketplaces in Brazil during the period **2016-2018**. From the given data, it is possible to study the orders in several ways: order status and delivery speed, prices paid, method of payment, cost of shipping, geolocation of the clients, etc.
+
+**Olist** database has around **100,000 real orders** done from various marketplaces in Brazil during the period **2016–2018**. From the given data, it is possible to study the orders in several ways: order status and delivery speed, prices paid, method of payment, cost of shipping, geolocation of the clients, etc.
 The objective of the project is to build a good structured pipeline with **PostgreSQL** and an interactive dashboard with **Power BI** that is clear and easily understandable in real business scenarios.
 
 
@@ -87,4 +89,5 @@ A static PDF version of the dashboard is available in the `docs/` folder.
 
 ## Notes
 - The dataset is not included in the repository
+
 - Project designed for **professional portfolio**

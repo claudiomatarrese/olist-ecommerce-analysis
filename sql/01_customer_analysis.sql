@@ -1,18 +1,20 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 01 – CUSTOMER ANALYSIS (RETENTION & FREQUENCY)
--- FILE: 01_customer_analysis.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 01: customers (retention and purchase frequency)
+-- File: 01_customer_analysis.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
--- DESCRIPTION:
---   Construction of customer views: delivered base layer, per-customer aggregation, retention calculation, purchase frequency and final KPIs.
---   Business-ready output.
+-- What it does:
+--   Builds the customer views: delivered orders per customer, time between orders,
+--   one row per customer with a repeat flag, and a single-row retention summary.
+--   Customers are identified by customer_unique_id (customer_id changes on every order).
+--   These views use all delivered orders, not only the clean set from phase 02.
 -- ============================================================
 
 
 -- ============================================================
--- 01.1) DELIVERED ORDERS BASE (RAW → BUSINESS LAYER)
+-- 01.1) Delivered orders (base)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_delivered_base_v AS
@@ -27,7 +29,7 @@ WHERE o.order_status = 'delivered';
 
 
 -- ============================================================
--- 01.2) CUSTOMERS WITH DELIVERED ORDERS ONLY
+-- 01.2) Delivered orders with the real customer id (customer_unique_id)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_per_customer_delivered_v AS
@@ -42,7 +44,9 @@ JOIN customers c
 
 
 -- ============================================================
--- 01.3) ORDER LAG → CALCULATING INTERVALS BETWEEN PURCHASES
+-- 01.3) Previous order date for each customer (LAG)
+-- The gap between two orders is measured on timestamps, so two orders placed on the same
+-- day count as two separate purchases.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_order_lag_v AS
@@ -57,7 +61,8 @@ FROM olist_per_customer_delivered_v;
 
 
 -- ============================================================
--- 01.4) RETENTION – FREQUENCY & STATISTICS CALCULATION
+-- 01.4) One row per customer: number of orders, repeat flag, first purchase,
+-- average days between orders
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_customer_retention_v AS
@@ -114,7 +119,8 @@ LEFT JOIN purchase_frequency pf
 
 
 -- ============================================================
--- 01.5) RETENTION KPIs – FINAL VIEW
+-- 01.5) Retention summary (single row)
+-- The 90-day, 60-day, 30-day and 365-day rules below are measured from the latest order date in the data.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_kpi_retention_v AS
@@ -131,16 +137,16 @@ last_orders AS (
     GROUP BY customer_unique_id
 )
 SELECT
-    -- Total real customers (unique_id)
+    -- All customers with a delivered order
     (SELECT COUNT(DISTINCT customer_unique_id)
        FROM olist_per_customer_delivered_v) AS total_customers,
 
-    -- Returning customers (>1 delivered order)
+    -- Repeat customers (more than 1 delivered order)
     (SELECT COUNT(*)
        FROM olist_customer_retention_v
        WHERE is_returning_customer = true) AS returning_customers,
 
-    -- Retention rate (%)
+    -- Repeat rate (%)
     ROUND(
         (
             SELECT COUNT(*)::numeric
@@ -152,27 +158,27 @@ SELECT
            FROM olist_per_customer_delivered_v)
     * 100, 2) AS retention_rate_percent,
 
-    -- Average purchase frequency (days)
+    -- Average days between orders
     (SELECT ROUND(AVG(avg_purchase_frequency_days), 2)
        FROM olist_customer_retention_v) AS avg_purchase_frequency_days,
 
-    -- Active customers (at least 1 delivered order)
+    -- Active customers (at least 1 delivered order, so same as the total)
     (SELECT COUNT(DISTINCT customer_unique_id)
        FROM olist_per_customer_delivered_v) AS active_customers,
 
-    -- Churned customers (no orders in last 90 days)
+    -- Churned: last order more than 90 days before the latest date in the data
     (SELECT COUNT(*)
        FROM last_orders lo
        CROSS JOIN as_of a
      WHERE lo.last_order < a.as_of_date - INTERVAL '90 days') AS churned_customers,
 
-    -- Customers inactive in last 12 months
+    -- Inactive: last order more than 365 days before the latest date in the data
     (SELECT COUNT(*)
        FROM last_orders lo
        CROSS JOIN as_of a
      WHERE lo.last_order < a.as_of_date - INTERVAL '365 days') AS inactive_12_months,
 
-    -- At-risk customers (no order between 60 and 90 days)
+    -- At risk: last order between 60 and 90 days before the latest date in the data
     (SELECT COUNT(*)
        FROM last_orders lo
        CROSS JOIN as_of a
@@ -180,7 +186,7 @@ SELECT
            a.as_of_date - INTERVAL '90 days'
        AND a.as_of_date - INTERVAL '60 days') AS at_risk_customers,
 
-    -- New customers (first order in last 30 days)
+    -- New: first order in the 30 days before the latest date in the data
     (SELECT COUNT(*)
        FROM last_orders lo
        CROSS JOIN as_of a

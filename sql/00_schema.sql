@@ -1,13 +1,27 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- FILE: 00_schema.sql
--- PURPOSE: Create RAW tables and indexes
--- AUTHOR: Claudio Matarrese
+-- Olist e-commerce analysis
+-- File: 00_schema.sql
+-- What it does: creates the raw tables and their indexes. Run it first.
+-- Author: Claudio Matarrese
+--
+-- Setup notes (things this script does not do for you):
+--   1) product_category_name_translation is not created here, but 03_product_analysis.sql needs it.
+--      Create it once and load product_category_name_translation.csv into it:
+--        CREATE TABLE product_category_name_translation (
+--            product_category_name VARCHAR PRIMARY KEY,
+--            product_category_name_english VARCHAR);
+--   2) The reviews CSV repeats some review_id values (99,224 rows, 98,410 different ids).
+--      To keep every review, drop the primary key on both review tables before loading,
+--      then load the full file into both of them:
+--        ALTER TABLE order_reviews DROP CONSTRAINT order_reviews_pkey;
+--        ALTER TABLE order_reviews_full DROP CONSTRAINT order_reviews_full_pkey;
+--   3) The CSV files are loaded with an import tool (for example pgAdmin: Import/Export Data,
+--      header on, UTF8). The scripts only start from the loaded tables.
 -- ============================================================
 
 
 -- ============================================================
--- 01) CUSTOMERS TABLE
+-- 01) Customers
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS customers (
@@ -23,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_customers_unique_id
 
 
 -- ============================================================
--- 02) ORDERS TABLE
+-- 02) Orders
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -48,7 +62,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_purchase_ts
 
 
 -- ============================================================
--- 03) ORDER_ITEMS TABLE
+-- 03) Order items
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_items (
@@ -73,7 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order_id
 
 
 -- ============================================================
--- 04) ORDER_PAYMENTS TABLE
+-- 04) Order payments
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_payments (
@@ -93,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_order_payments_type
 
 
 -- ============================================================
--- 05) ORDER_REVIEWS TABLE
+-- 05) Order reviews
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_reviews (
@@ -114,7 +128,9 @@ CREATE INDEX IF NOT EXISTS idx_reviews_score
 
 
 -- ============================================================
--- 05b) ORDER_REVIEWS_FULL (extended version of reviews table)
+-- 05b) Order reviews (full)
+-- Same columns as order_reviews. The reviews views (phase 04) read from this table,
+-- the products view (phase 03) reads from order_reviews.
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS order_reviews_full (
@@ -132,7 +148,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_full_order_id
 
 
 -- ============================================================
--- 06) PRODUCTS TABLE
+-- 06) Products
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS products (
@@ -152,7 +168,7 @@ CREATE INDEX IF NOT EXISTS idx_products_category
 
 
 -- ============================================================
--- 07) SELLERS TABLE
+-- 07) Sellers
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS sellers (

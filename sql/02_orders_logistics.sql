@@ -1,14 +1,14 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 02 – ORDERS & LOGISTICS ANALYSIS
--- FILE: 02_orders_logistics.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 02: orders and logistics
+-- File: 02_orders_logistics.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
 
 
 -- ============================================================
--- 02.0) BASE ORDERS VIEW
+-- 02.0) Orders (base view, no changes)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_base_v AS
@@ -25,7 +25,7 @@ FROM orders;
 
 
 -- ============================================================
--- 02.1) BASE LOGISTICS VIEW (RAW CALCULATIONS)
+-- 02.1) Delivery times and flags (raw calculations)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_logistics_v AS
@@ -54,6 +54,8 @@ SELECT
     (EXTRACT(EPOCH FROM order_approved_at - order_purchase_timestamp) / 86400)
         AS purchase_to_approval_days,
 
+    -- Late = delivered 1 or more days after the estimated date.
+    -- On time = anything less than that, early deliveries included.
 	CASE
 		WHEN (EXTRACT(EPOCH FROM order_delivered_customer_date - order_estimated_delivery_date) / 86400) >= 1
 		THEN 1 ELSE 0
@@ -64,6 +66,9 @@ SELECT
 		THEN 1 ELSE 0
 	END AS is_on_time,	
 
+    -- Date error flag: dates not in a logical order (purchase after approval,
+    -- delivery before the carrier pick-up, estimated date before the purchase, ...).
+    -- Missing dates are not flagged here, the clean view filters them out.
     CASE
         WHEN order_purchase_timestamp > order_approved_at
           OR order_approved_at > order_delivered_carrier_date
@@ -79,7 +84,8 @@ FROM olist_orders_base_v;
 
 
 -- ============================================================
--- 02.2) CLEAN LOGISTICS VIEW (BUSINESS-READY)
+-- 02.2) Clean orders: delivered, with valid dates and no date errors
+-- This is the main set used by the dashboard. Times are rounded to 2 decimals.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_logistics_clean_v AS
@@ -112,7 +118,7 @@ WHERE has_temporal_error = false
 
 
 -- ============================================================
--- 02.3) LOGISTICS KPIs (PRODUCTION)
+-- 02.3) Logistics KPIs (single row)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_kpi_v AS
@@ -138,7 +144,7 @@ WHERE order_status = 'delivered';
 
 
 -- ============================================================
--- 02.4) GEOGRAPHIC KPIs – CUSTOMER STATE
+-- 02.4) Delivery KPIs by customer state
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_geo_customer_v AS
@@ -157,7 +163,8 @@ GROUP BY c.customer_state;
 
 
 -- ============================================================
--- 02.5) GEOGRAPHIC KPIs – SELLER STATE
+-- 02.5) Delivery KPIs by seller state
+-- An order with items from more than one seller counts once for each seller state.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_geo_seller_v AS
@@ -180,7 +187,7 @@ GROUP BY seller_state;
 
 
 -- ============================================================
--- 02.6) LOGISTICS MATRIX: SELLER → CUSTOMER
+-- 02.6) Average delay for each seller state / customer state pair
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_orders_seller_customer_matrix_v AS

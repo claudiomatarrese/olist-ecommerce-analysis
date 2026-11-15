@@ -1,79 +1,79 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 08 – FULL QUALITY CHECKS
--- FILE: 08_quality_checks.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 08: quality checks
+-- File: 08_quality_checks.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
--- PURPOSE:
---   Quality checks across all phases: customers, orders, logistics, products,
---   payments, reviews, and sellers.
---   No views are created. Diagnostic SELECT statements only.
--- ============================================================
-
-
--- ============================================================
--- 08.1) CUSTOMERS / ORDERS CHECKS
+-- What it does:
+--   Final checks on the views of every phase (customers, orders, logistics, products,
+--   payments, reviews, sellers). Only SELECTs, no views are created.
+--   It is optional: the dashboard does not depend on it.
 -- ============================================================
 
--- Total raw orders
+
+-- ============================================================
+-- 08.1) Customers and orders
+-- ============================================================
+
+-- Orders (raw)
 SELECT COUNT(*) AS total_orders_raw
 FROM orders;
 
--- Total delivered orders
+-- Delivered orders
 SELECT COUNT(*) AS total_orders_delivered
 FROM orders
 WHERE order_status = 'delivered';
 
--- Total raw customers
+-- Customers (raw)
 SELECT COUNT(*) AS total_customers_raw
 FROM customers;
 
--- Check for anomalous NULL customer_id (should not happen)
+-- Orders without a customer_id (should be 0)
 SELECT COUNT(*) AS orders_with_null_customer_id
 FROM orders
 WHERE customer_id IS NULL;
 
 
 -- ============================================================
--- 08.2) LOGISTICS CHECKS (Phase 02)
+-- 08.2) Logistics (phase 02)
 -- ============================================================
 
--- Temporal errors in logistics
+-- Orders flagged with date errors
 SELECT COUNT(*) AS orders_with_temporal_errors
 FROM olist_orders_logistics_v
 WHERE has_temporal_error = true;
 
--- Delivery before shipment
+-- Delivered to the customer before the carrier pick-up
 SELECT COUNT(*) AS delivery_before_shipment
 FROM olist_orders_logistics_v
 WHERE order_delivered_customer_date < order_delivered_carrier_date;
 
--- Negative lead time
+-- Negative delivery time
 SELECT COUNT(*) AS negative_lead_time
 FROM olist_orders_logistics_v
 WHERE purchase_to_delivery_days < 0;
 
--- Extreme negative delays (< -30 days)
+-- Delivered more than 30 days before the estimated date
 SELECT COUNT(*) AS extreme_negative_delays
 FROM olist_orders_logistics_v
 WHERE delivery_delay_days < -30;
 
 
 -- ============================================================
--- 08.3) REVIEW CHECKS (Phase 04)
+-- 08.3) Reviews (phase 04)
 -- ============================================================
 
--- Negative response time (<0)
+-- Answer sent before the review was created (should be 0)
 SELECT COUNT(*) AS negative_response_time
 FROM olist_reviews_clean_v
 WHERE review_response_days < 0;
 
--- Total valid reviews
+-- Reviews in the clean set
 SELECT COUNT(*) AS total_valid_reviews
 FROM olist_reviews_clean_v;
 
--- Review score distribution
+-- Reviews per score
 SELECT review_score, COUNT(*) AS review_count
 FROM olist_reviews_clean_v
 GROUP BY review_score
@@ -81,37 +81,37 @@ ORDER BY review_score;
 
 
 -- ============================================================
--- 08.4) PRODUCT CHECKS (Phase 03)
+-- 08.4) Products (phase 03)
 -- ============================================================
 
--- Negative or zero prices
+-- Items with a price of zero or below
 SELECT COUNT(*) AS invalid_prices
 FROM olist_products_clean_v
 WHERE price <= 0;
 
--- Negative freight values
+-- Items with a negative freight value
 SELECT COUNT(*) AS negative_freight
 FROM olist_products_clean_v
 WHERE freight_value < 0;
 
--- Products without rating (possible missing review)
+-- Items whose order has no review
 SELECT COUNT(*) AS products_without_rating
 FROM olist_products_clean_v
 WHERE review_score IS NULL;
 
 
 -- ============================================================
--- 08.5) SELLER CHECKS (Phase 06)
+-- 08.5) Sellers (phase 06)
 -- ============================================================
 
--- Sellers with highest revenue (top 30 diagnostic)
+-- Top 30 sellers by revenue
 SELECT seller_id, SUM(revenue) AS raw_revenue
 FROM olist_sellers_clean_v
 GROUP BY seller_id
 ORDER BY raw_revenue DESC
 LIMIT 30;
 
--- Negative delivery days
+-- Negative delivery time (sellers view)
 SELECT COUNT(*) AS negative_lead_time_seller
 FROM olist_sellers_clean_v
 WHERE purchase_to_delivery_days < 0;
@@ -124,23 +124,23 @@ ORDER BY seller_count DESC;
 
 
 -- ============================================================
--- 08.6) RETENTION CHECKS (Phase 01)
+-- 08.6) Retention (phase 01)
 -- ============================================================
 
--- Unique real customers with at least 1 delivered order (customer_unique_id)
+-- Customers (customer_unique_id) with at least 1 delivered order
 SELECT COUNT(DISTINCT customer_unique_id) AS unique_real_customers_delivered
 FROM olist_per_customer_delivered_v;
 
--- Real customers (unique_id) with delivered orders
+-- Same query as the one above, kept as a duplicate check
 SELECT COUNT(DISTINCT customer_unique_id) AS real_customers_with_orders
 FROM olist_per_customer_delivered_v;
 
--- Returning customers raw (>1 order)
+-- Repeat customers (more than 1 order)
 SELECT COUNT(*) AS returning_customers_raw
 FROM olist_customer_retention_v
 WHERE total_orders > 1;
 
--- Raw retention rate (diagnostic)
+-- Repeat rate from the retention view
 SELECT
     COUNT(DISTINCT customer_unique_id) AS total_customers_raw,
     SUM(CASE WHEN total_orders > 1 THEN 1 ELSE 0 END) AS returning_customers_raw,
@@ -151,7 +151,7 @@ SELECT
     ) AS raw_retention_rate_percent
 FROM olist_customer_retention_v;
 
--- Top customers by number of orders (diagnostic)
+-- Customers with the most orders
 SELECT customer_unique_id, total_orders AS orders
 FROM olist_customer_retention_v
 ORDER BY total_orders DESC
@@ -159,7 +159,7 @@ LIMIT 30;
 
 
 -- ============================================================
--- 08.7) OVERALL SELLER CHECKS (Phase 06)
+-- 08.7) Sellers: top 10 by revenue
 -- ============================================================
 
 SELECT seller_id, raw_revenue
@@ -173,7 +173,7 @@ LIMIT 10;
 
 
 -- ============================================================
--- 08.8) RANDOM DELIVERED ORDERS CHECK (SANITY CHECK)
+-- 08.8) Random sample of delivered orders (quick eyeball check)
 -- ============================================================
 
 SELECT

@@ -1,18 +1,18 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 04 – REVIEWS ANALYSIS
--- FILE: 04_reviews_analysis.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 04: reviews
+-- File: 04_reviews_analysis.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
--- DESCRIPTION:
---   Reviews base + clean layer, detail views (category/state/delivery time),
---   and KPI views (single-row output).
+-- What it does:
+--   Reviews linked to clean delivered orders, sentiment flags, average rating by
+--   category, state and delivery time, and the review KPIs (single row).
 -- ============================================================
 
 
 -- ============================================================
--- 04.1) REVIEWS BASE VIEW
+-- 04.1) Reviews base view (reviews of clean delivered orders)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_reviews_base_v AS
@@ -40,7 +40,8 @@ WHERE ol.order_status = 'delivered';
 
 
 -- ============================================================
--- 04.2) CLEAN REVIEWS VIEW
+-- 04.2) Clean reviews view
+-- Positive = 4-5 stars, neutral = 3, negative = 1-2.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_reviews_clean_v AS
@@ -71,11 +72,13 @@ FROM olist_reviews_base_v;
 
 
 -- ============================================================
--- 04.3) DETAIL VIEWS
--- (Average rating by category, state, delivery time)
+-- 04.3) Detail views
+-- Average rating by category, customer state and delivery time
 -- ============================================================
 
--- 04.3.1 – Average rating by product category
+-- 04.3.1) Average rating by product category
+-- Each order is given one category (DISTINCT ON keeps one row per order, with no sort rule),
+-- so an order with items from several categories is counted once.
 CREATE OR REPLACE VIEW olist_reviews_rating_by_category_v AS
 WITH prod AS (
     SELECT DISTINCT ON (order_id)
@@ -91,7 +94,7 @@ JOIN prod p USING (order_id)
 GROUP BY p.product_category_name;
 
 
--- 04.3.2 – Average rating by customer state
+-- 04.3.2) Average rating by customer state
 CREATE OR REPLACE VIEW olist_reviews_rating_by_state_v AS
 SELECT
     c.customer_state,
@@ -102,7 +105,7 @@ JOIN customers c
 GROUP BY c.customer_state;
 
 
--- 04.3.3 – Average rating by delivery lead time
+-- 04.3.3) Average rating by days from purchase to delivery
 CREATE OR REPLACE VIEW olist_reviews_rating_by_delivery_time_v AS
 SELECT
     ol.purchase_to_delivery_days,
@@ -115,7 +118,7 @@ ORDER BY ol.purchase_to_delivery_days;
 
 
 -- ============================================================
--- 04.4) REVIEW KPIs (SINGLE ROW)
+-- 04.4) Review KPIs (single row)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_reviews_kpi_v AS
@@ -138,7 +141,8 @@ FROM olist_reviews_clean_v;
 
 
 -- ============================================================
--- 04.5) GLOBAL REVIEW KPIs (SINGLE ROW)
+-- 04.5) Global review KPIs (single row)
+-- Same columns as 04.4, under the _global_v name that the KPI master uses.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_reviews_kpi_global_v AS

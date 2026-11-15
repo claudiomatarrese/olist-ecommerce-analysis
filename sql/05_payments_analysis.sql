@@ -1,19 +1,18 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 05 – PAYMENTS ANALYSIS
--- FILE: 05_payments_analysis.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 05: payments
+-- File: 05_payments_analysis.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
--- DESCRIPTION:
---   Payments clean layer (includes customer_id for model relationships),
---   KPIs by payment type, and global single-row KPIs.
---   Perimeter: delivered orders within clean logistics view.
+-- What it does:
+--   Payments of delivered orders in the clean set (with customer_id, so the table can be
+--   related to the others in Power BI), KPIs by payment type and a single-row summary.
 -- ============================================================
 
 
 -- ============================================================
--- 05.1) PAYMENTS CLEAN (DELIVERED + CLEAN PERIMETER)
+-- 05.1) Payments (delivered orders in the clean set, one row per payment)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_payments_clean_v AS
@@ -33,7 +32,7 @@ WHERE ol.order_status = 'delivered';
 
 
 -- ============================================================
--- 05.2) PAYMENTS KPI BY PAYMENT TYPE (DELIVERED + CLEAN)
+-- 05.2) KPIs by payment type
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_payments_kpi_v AS
@@ -52,7 +51,10 @@ GROUP BY payment_type;
 
 
 -- ============================================================
--- 05.3) GLOBAL PAYMENTS KPI (SINGLE ROW) (DELIVERED + CLEAN)
+-- 05.3) Global payment KPIs (single row)
+-- The averages are averages of the per-type values, not of all payments, and
+-- total_paid_orders adds up the orders of each type, so an order paid with two methods
+-- is counted twice. The dashboard calculates these on payment rows, so a few numbers differ.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_payments_kpi_global_v AS

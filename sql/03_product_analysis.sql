@@ -1,20 +1,22 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 03 – PRODUCT & CATEGORY ANALYSIS
--- FILE: 03_product_analysis.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 03: products and categories
+-- File: 03_product_analysis.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
 -- ============================================================
 
 
 -- ============================================================
--- 03.1) PRODUCTS BASE VIEW
+-- 03.1) Products base view (one row per item sold)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_products_base_v AS
 SELECT
     oi.order_id,
     oi.product_id,
+    -- Category name in English. If the category is not in the translation table, keep the
+    -- original name. If the product has no category at all, use 'Unknown'.
     COALESCE(
 		t.product_category_name_english,
 		p.product_category_name,
@@ -24,7 +26,9 @@ SELECT
     oi.freight_value,
     oi.price AS revenue,
 
-    -- order-level rating (avoids duplicates)
+    -- Review score of the order (highest score if the order has more than one review).
+    -- The score is repeated on every item of the order, so orders with many items
+    -- weigh more in item-level averages.
     (
         SELECT MAX(review_score)
         FROM order_reviews r
@@ -53,7 +57,7 @@ JOIN olist_orders_logistics_clean_v lg
 
 
 -- ============================================================
--- 03.2) CLEAN PRODUCTS VIEW
+-- 03.2) Clean products view (rounded values and flags)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_products_clean_v AS
@@ -84,7 +88,7 @@ FROM olist_products_base_v;
 
 
 -- ============================================================
--- 03.3) CATEGORY KPIs
+-- 03.3) KPIs by category
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_products_kpi_v AS
@@ -113,7 +117,9 @@ ORDER BY total_revenue DESC;
 
 
 -- ============================================================
--- 03.4) GLOBAL PRODUCT KPIs
+-- 03.4) Global product KPIs (single row)
+-- These are averages of the category averages, not weighted by items sold.
+-- The dashboard cards are calculated on item rows, so they can differ slightly.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_products_kpi_global_v AS

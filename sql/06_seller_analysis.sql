@@ -1,16 +1,19 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- PHASE 06 – SELLER ANALYSIS
--- FILE: 06_seller_analysis.sql
--- AUTHOR: Claudio Matarrese
--- TOOLS: PostgreSQL + Power BI
+-- Olist e-commerce analysis
+-- Phase 06: sellers
+-- File: 06_seller_analysis.sql
+-- Author: Claudio Matarrese
+-- Tools: PostgreSQL, Power BI
+-- Not used in the dashboard, kept as an extra analysis.
 -- ============================================================
 
 
 -- ============================================================
--- 06.1) SELLERS BASE VIEW
+-- 06.1) Sellers base view
 -- ============================================================
--- Grain: 1 row = 1 product item sold by a seller.
+-- One row per item sold by a seller (delivered orders in the clean set).
+-- Careful: an order with more than one review repeats its item rows (LEFT JOIN on reviews),
+-- so seller revenue can be slightly overstated. This phase is not used in the dashboard.
 
 CREATE OR REPLACE VIEW olist_sellers_base_v AS
 SELECT
@@ -49,7 +52,7 @@ LEFT JOIN olist_reviews_clean_v r
 
 
 -- ============================================================
--- 06.2) CLEAN SELLERS VIEW
+-- 06.2) Clean sellers view
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_sellers_clean_v AS
@@ -81,7 +84,7 @@ FROM olist_sellers_base_v;
 
 
 -- ============================================================
--- 06.3) SELLER KPIs (ONE ROW PER SELLER)
+-- 06.3) KPIs per seller (one row per seller)
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_sellers_kpi_v AS
@@ -111,7 +114,8 @@ ORDER BY total_revenue DESC;
 
 
 -- ============================================================
--- 06.4) GLOBAL SELLER KPIs (SINGLE ROW)
+-- 06.4) Global seller KPIs (single row)
+-- Averages of the per-seller values.
 -- ============================================================
 
 CREATE OR REPLACE VIEW olist_sellers_kpi_global_v AS

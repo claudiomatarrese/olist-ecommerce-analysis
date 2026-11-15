@@ -1,34 +1,35 @@
 -- ============================================================
--- PROJECT: OLIST E-COMMERCE ANALYSIS
--- FILE: 00_raw_diagnostics.sql
--- PURPOSE: Preliminary quality checks and raw diagnostic calculations
--- AUTHOR: Claudio Matarrese
+-- Olist e-commerce analysis
+-- File: 00_raw_diagnostics.sql
+-- What it does: checks the raw tables before any view is built (counts, date problems,
+-- duplicates, strange values). Read-only SELECTs, run it after loading the CSV files.
+-- Author: Claudio Matarrese
 -- ============================================================
 
 
 -- ============================================================
--- 01) ORDERS: BASIC COUNTS
+-- 01) Orders: basic counts
 -- ============================================================
 
--- Total raw orders
+-- Orders in the raw table
 SELECT COUNT(*) AS total_orders_raw
 FROM orders;
 
--- Total delivered orders
+-- Orders with status 'delivered'
 SELECT COUNT(*) AS total_orders_delivered
 FROM orders
 WHERE order_status = 'delivered';
 
 
 -- ============================================================
--- 02) CUSTOMERS: DUPLICATES & DATA QUALITY
+-- 02) Customers: duplicates and missing values
 -- ============================================================
 
--- Total raw customers
+-- Rows in the customers table
 SELECT COUNT(*) AS total_customers_raw
 FROM customers;
 
--- Check for missing or anomalous customer_unique_id
+-- customer_unique_id should never be NULL
 SELECT customer_id, COUNT(*)
 FROM customers
 WHERE customer_unique_id IS NULL
@@ -36,10 +37,10 @@ GROUP BY customer_id;
 
 
 -- ============================================================
--- 03) ORDERS: RAW TEMPORAL CHECKS
+-- 03) Orders: date checks on the raw data
 -- ============================================================
 
--- 03.1) Orders with raw temporal inconsistencies
+-- 03.1) Orders whose dates are not in a logical order
 SELECT COUNT(*) AS orders_with_temporal_errors
 FROM orders
 WHERE order_purchase_timestamp > order_approved_at
@@ -47,36 +48,37 @@ WHERE order_purchase_timestamp > order_approved_at
    OR order_delivered_customer_date < order_delivered_carrier_date
    OR order_delivered_customer_date < order_purchase_timestamp;
 
--- 03.2) Delivery before shipment
+-- 03.2) Delivered to the customer before the carrier picked it up
 SELECT COUNT(*) AS delivery_before_shipment
 FROM orders
 WHERE order_delivered_customer_date < order_delivered_carrier_date;
 
--- 03.3) Negative raw lead time
+-- 03.3) Delivered before the purchase (negative delivery time)
 SELECT COUNT(*) AS negative_lead_time
 FROM orders
 WHERE order_delivered_customer_date < order_purchase_timestamp;
 
--- 03.4) Extremely negative delays (dataset anomalies)
+-- 03.4) Delivered more than 30 days before the estimated date.
+-- Only looked at here to understand the data, it is not used to filter orders.
 SELECT COUNT(*) AS extreme_negative_delays
 FROM orders
 WHERE EXTRACT(EPOCH FROM (order_delivered_customer_date - order_estimated_delivery_date)) / 86400 < -30;
 
 
 -- ============================================================
--- 04) REVIEWS: RAW DIAGNOSTICS
+-- 04) Reviews: raw checks
 -- ============================================================
 
--- Negative response timing (response before creation)
+-- Answer sent before the review was created
 SELECT COUNT(*) AS negative_response_timing
 FROM order_reviews_full
 WHERE review_answer_timestamp < review_creation_date;
 
--- Total valid reviews
+-- Reviews loaded
 SELECT COUNT(*) AS total_valid_reviews
 FROM order_reviews_full;
 
--- Review score distribution
+-- Reviews per score
 SELECT review_score, COUNT(*) AS review_count
 FROM order_reviews_full
 GROUP BY review_score
@@ -84,20 +86,20 @@ ORDER BY review_score;
 
 
 -- ============================================================
--- 05) PRODUCTS: RAW DATA QUALITY
+-- 05) Items: raw checks
 -- ============================================================
 
--- Negative or null prices
+-- Items with a zero, negative or missing price
 SELECT COUNT(*) AS invalid_prices
 FROM order_items
 WHERE price <= 0 OR price IS NULL;
 
--- Negative freight values
+-- Items with a negative freight value
 SELECT COUNT(*) AS negative_freight
 FROM order_items
 WHERE freight_value < 0;
 
--- Products without rating (later populated via JOIN)
+-- Items whose order has no review
 SELECT COUNT(*) AS products_without_rating
 FROM order_items oi
 LEFT JOIN order_reviews_full r ON oi.order_id = r.order_id
@@ -105,16 +107,16 @@ WHERE r.review_score IS NULL;
 
 
 -- ============================================================
--- 06) SELLERS: RAW QUALITY STATUS
+-- 06) Sellers: raw checks
 -- ============================================================
 
--- Sellers with missing location values
+-- Sellers with a missing city or state
 SELECT seller_id
 FROM sellers
 WHERE seller_state IS NULL
    OR seller_city IS NULL;
 
--- Number of sellers per state
+-- Sellers per state
 SELECT seller_state, COUNT(DISTINCT seller_id) AS seller_count
 FROM sellers
 GROUP BY seller_state
@@ -122,22 +124,23 @@ ORDER BY seller_count DESC;
 
 
 -- ============================================================
--- 07) CUSTOMERS: RAW RETENTION CHECK
+-- 07) Customers: repeat buyers in the raw data
 -- ============================================================
 
--- Unique customers with delivered orders
+-- customer_id values with a delivered order.
+-- customer_id changes with every order, so this is close to the number of delivered orders.
 SELECT COUNT(DISTINCT customer_id) AS unique_customers_delivered
 FROM orders
 WHERE order_status = 'delivered';
 
--- Real customers (unique_id)
+-- Real customers (customer_unique_id) with a delivered order
 SELECT COUNT(DISTINCT customer_unique_id) AS real_customers_with_orders
 FROM customers
 WHERE customer_id IN (
     SELECT customer_id FROM orders WHERE order_status = 'delivered'
 );
 
--- Returning customers (raw) = more than 1 delivered order
+-- Repeat customers: more than 1 delivered order
 SELECT COUNT(*) AS returning_customers_raw
 FROM (
     SELECT customer_unique_id
@@ -148,7 +151,7 @@ FROM (
     HAVING COUNT(*) > 1
 ) t;
 
--- Total real customers (raw)
+-- Real customers that placed any order
 SELECT COUNT(*) AS total_real_customers_raw
 FROM (
     SELECT DISTINCT customer_unique_id
@@ -156,7 +159,7 @@ FROM (
     WHERE customer_id IN (SELECT customer_id FROM orders)
 ) t;
 
--- Raw vs final retention diagnostic
+-- Repeat rate on the raw data, to compare with the retention view of phase 01
 SELECT
     (SELECT COUNT(DISTINCT customer_unique_id)
      FROM customers
@@ -191,10 +194,10 @@ SELECT
 
 
 -- ============================================================
--- 08) TOP CUSTOMERS & TOP SELLERS (RAW)
+-- 08) Top customers and top sellers
 -- ============================================================
 
--- Top customers (raw)
+-- Customers with the most delivered orders
 SELECT customer_unique_id, COUNT(*) AS orders
 FROM orders o
 JOIN customers c ON o.customer_id = c.customer_id
@@ -203,7 +206,7 @@ GROUP BY customer_unique_id
 ORDER BY orders DESC
 LIMIT 20;
 
--- Top sellers by raw revenue
+-- Sellers with the highest revenue (item prices, all order statuses)
 SELECT seller_id, SUM(price) AS raw_revenue
 FROM order_items
 GROUP BY seller_id
@@ -212,7 +215,7 @@ LIMIT 20;
 
 
 -- ============================================================
--- 09) RANDOM ORDER SAMPLE CHECK (RAW)
+-- 09) Random sample of delivered orders (quick eyeball check)
 -- ============================================================
 
 SELECT *
